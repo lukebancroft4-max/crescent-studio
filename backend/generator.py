@@ -16,7 +16,7 @@ OUTPUT_DIR = Path(__file__).parent.parent / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 HF_TOKEN = os.getenv("HF_API_TOKEN")
-MODEL = os.getenv("MUSICGEN_MODEL", "facebook/musicgen-small")
+MODEL = os.getenv("MUSICGEN_MODEL", "facebook/musicgen-stereo-large")
 
 
 def build_prompt(request: GenerateRequest) -> str:
