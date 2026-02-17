@@ -26,7 +26,7 @@ export async function fetchHistory() {
 }
 
 export function getAudioUrl(beatId) {
-  return `${API_BASE}/export/wav/${beatId}`;
+  return `${API_BASE}/export/audio/${beatId}`;
 }
 
 export function getMidiUrl(beatId) {

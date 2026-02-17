@@ -1,10 +1,22 @@
 import { useState } from "react";
 
 const TRACK_COLORS = {
-  drums: "#ef4444",
-  bass: "#f59e0b",
-  melody: "#3b82f6",
-  pad: "#8b5cf6",
+  drums: "#C9A96E",
+  bass: "#8B7345",
+  melody: "#E4C98A",
+  pad: "#A8A29E",
+  "log drum": "#C9A96E",
+  shakers: "#8B7345",
+  congas: "#E4C98A",
+  "talking drum": "#C9A96E",
+  guitar: "#A8A29E",
+  piano: "#E4C98A",
+  rhodes: "#C9A96E",
+  horns: "#8B7345",
+  marimba: "#E4C98A",
+  kalimba: "#C9A96E",
+  organ: "#A8A29E",
+  flute: "#8B7345",
 };
 
 export default function TrackMixer({ instruments }) {
@@ -38,31 +50,39 @@ export default function TrackMixer({ instruments }) {
   if (!instruments || instruments.length === 0) return null;
 
   return (
-    <div className="bg-zinc-900 rounded-xl p-4 space-y-3">
-      <h2 className="text-lg font-bold text-white">Mixer</h2>
+    <div className="panel rounded-lg p-5 space-y-3">
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-[10px] tracking-[0.18em] uppercase text-cream-muted/70 font-medium">
+          Channel Mixer
+        </p>
+        <p className="text-[10px] tracking-[0.1em] text-cream-muted/30">
+          {tracks.length} tracks
+        </p>
+      </div>
+
       {tracks.map((track, i) => (
         <div
           key={track.name}
-          className="flex items-center gap-3 bg-zinc-800/50 rounded-lg p-3"
+          className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-surface-raised/50"
         >
-          {/* Color indicator */}
+          {/* Color bar */}
           <div
-            className="w-2 h-8 rounded-full"
-            style={{ backgroundColor: TRACK_COLORS[track.name] || "#6b7280" }}
+            className="w-[3px] h-6 rounded-full opacity-60"
+            style={{ backgroundColor: TRACK_COLORS[track.name] || "#A8A29E" }}
           />
 
-          {/* Track name */}
-          <span className="text-white text-sm font-medium w-16 capitalize">
+          {/* Name */}
+          <span className="text-cream text-xs font-medium w-20 capitalize tracking-[0.02em]">
             {track.name}
           </span>
 
           {/* Mute */}
           <button
             onClick={() => toggleMute(i)}
-            className={`px-2 py-0.5 rounded text-xs font-bold transition ${
+            className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold tracking-wider transition-all duration-300 ${
               track.muted
-                ? "bg-red-600 text-white"
-                : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
+                ? "bg-danger/20 text-danger border border-danger/30"
+                : "text-cream-muted/40 border border-border-subtle hover:text-cream-muted hover:border-border"
             }`}
           >
             M
@@ -71,33 +91,31 @@ export default function TrackMixer({ instruments }) {
           {/* Solo */}
           <button
             onClick={() => toggleSolo(i)}
-            className={`px-2 py-0.5 rounded text-xs font-bold transition ${
+            className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold tracking-wider transition-all duration-300 ${
               track.solo
-                ? "bg-yellow-500 text-black"
-                : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
+                ? "bg-gold/20 text-gold border border-gold/30"
+                : "text-cream-muted/40 border border-border-subtle hover:text-cream-muted hover:border-border"
             }`}
           >
             S
           </button>
 
-          {/* Volume slider */}
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={track.volume}
-            onChange={(e) => setVolume(i, Number(e.target.value))}
-            className="flex-1 accent-purple-500"
-          />
-
-          <span className="text-zinc-500 text-xs w-8 text-right">
-            {track.volume}%
-          </span>
+          {/* Volume */}
+          <div className="flex-1 flex items-center gap-3">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={track.volume}
+              onChange={(e) => setVolume(i, Number(e.target.value))}
+              className="flex-1"
+            />
+            <span className="text-cream-muted/40 text-[10px] w-7 text-right tabular-nums">
+              {track.volume}
+            </span>
+          </div>
         </div>
       ))}
-      <p className="text-zinc-600 text-xs">
-        Note: Mixer is visual — MusicGen generates a single stereo mix. Stem separation requires additional models.
-      </p>
     </div>
   );
 }

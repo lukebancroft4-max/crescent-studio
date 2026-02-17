@@ -1,10 +1,8 @@
 import os
 import uuid
-import struct
-import io
 from pathlib import Path
 
-from huggingface_hub import InferenceClient
+import httpx
 from dotenv import load_dotenv
 
 from models import GenerateRequest
@@ -15,49 +13,61 @@ load_dotenv()
 OUTPUT_DIR = Path(__file__).parent.parent / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-HF_TOKEN = os.getenv("HF_API_TOKEN")
-MODEL = os.getenv("MUSICGEN_MODEL", "facebook/musicgen-stereo-large")
+API_KEY = os.getenv("ELEVENLABS_API_KEY")
+API_URL = "https://api.elevenlabs.io/v1/music"
+OUTPUT_FORMAT = "mp3_44100_192"
+MODEL_ID = "music_v1"
 
 
 def build_prompt(request: GenerateRequest) -> str:
+    # If user provided a custom prompt, use it directly with BPM/key appended
+    if request.custom_prompt.strip():
+        return f"{request.custom_prompt.strip()}, {request.bpm} BPM, key of {request.key.value}"
+
     genre_desc = GENRE_DESCRIPTIONS.get(request.genre, request.genre.value)
     instruments_str = ", ".join(i.value for i in request.instruments)
     prompt = (
-        f"{request.mood.value} {genre_desc} "
-        f"at {request.bpm} BPM in the key of {request.key.value}, "
-        f"featuring {instruments_str}"
+        f"{request.mood.value} {genre_desc}, "
+        f"featuring {instruments_str}, "
+        f"{request.bpm} BPM, key of {request.key.value}, "
+        f"instrumental only"
     )
     return prompt
 
 
 def generate_beat(request: GenerateRequest) -> tuple[str, Path]:
-    """Generate a beat using HuggingFace MusicGen. Returns (beat_id, wav_path)."""
-    client = InferenceClient(token=HF_TOKEN)
-    prompt = build_prompt(request)
+    """Generate a beat using ElevenLabs Music API. Returns (beat_id, mp3_path)."""
+    if not API_KEY:
+        raise RuntimeError("ELEVENLABS_API_KEY not set in .env")
 
-    audio_bytes = client.text_to_audio(
-        prompt,
-        model=MODEL,
+    prompt = build_prompt(request)
+    length_ms = request.duration * 1000
+
+    url = f"{API_URL}?output_format={OUTPUT_FORMAT}"
+    body = {
+        "prompt": prompt,
+        "music_length_ms": length_ms,
+        "model_id": MODEL_ID,
+        "force_instrumental": True,
+    }
+
+    response = httpx.post(
+        url,
+        headers={
+            "xi-api-key": API_KEY,
+            "Content-Type": "application/json",
+        },
+        json=body,
+        timeout=180.0,
     )
 
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"ElevenLabs API error {response.status_code}: {response.text[:500]}"
+        )
+
     beat_id = uuid.uuid4().hex[:12]
-    wav_path = OUTPUT_DIR / f"{beat_id}.wav"
+    mp3_path = OUTPUT_DIR / f"{beat_id}.mp3"
+    mp3_path.write_bytes(response.content)
 
-    # audio_bytes is raw bytes - save as WAV
-    if isinstance(audio_bytes, bytes):
-        wav_path.write_bytes(audio_bytes)
-    elif hasattr(audio_bytes, "read"):
-        wav_path.write_bytes(audio_bytes.read())
-    else:
-        # It might be a tuple of (sample_rate, numpy_array)
-        import numpy as np
-        import soundfile as sf
-        if isinstance(audio_bytes, tuple):
-            sr, data = audio_bytes
-            if isinstance(data, list):
-                data = np.array(data)
-            sf.write(str(wav_path), data, sr)
-        else:
-            wav_path.write_bytes(bytes(audio_bytes))
-
-    return beat_id, wav_path
+    return beat_id, mp3_path

@@ -1,39 +1,35 @@
 import { useEffect, useRef } from "react";
 import WaveSurfer from "wavesurfer.js";
 
-export default function WaveformDisplay({ audioUrl, onReady, onTimeUpdate }) {
+export default function WaveformDisplay({ audioUrl, onReady }) {
   const containerRef = useRef(null);
   const wavesurferRef = useRef(null);
 
   useEffect(() => {
     if (!containerRef.current || !audioUrl) return;
 
-    // Destroy previous instance
     if (wavesurferRef.current) {
       wavesurferRef.current.destroy();
     }
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "#7c3aed",
-      progressColor: "#a855f7",
-      cursorColor: "#e879f9",
+      waveColor: "rgba(201, 169, 110, 0.35)",
+      progressColor: "rgba(201, 169, 110, 0.85)",
+      cursorColor: "rgba(228, 201, 138, 0.6)",
       barWidth: 2,
-      barGap: 1,
-      barRadius: 2,
-      height: 80,
+      barGap: 2,
+      barRadius: 1,
+      height: 100,
       responsive: true,
       backend: "WebAudio",
+      cursorWidth: 1,
     });
 
     ws.load(audioUrl);
 
     ws.on("ready", () => {
       if (onReady) onReady(ws);
-    });
-
-    ws.on("audioprocess", (time) => {
-      if (onTimeUpdate) onTimeUpdate(time, ws.getDuration());
     });
 
     wavesurferRef.current = ws;
@@ -44,9 +40,13 @@ export default function WaveformDisplay({ audioUrl, onReady, onTimeUpdate }) {
   }, [audioUrl]);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full bg-zinc-900 rounded-lg p-2"
-    />
+    <div className="relative">
+      {/* Glow behind waveform */}
+      <div className="absolute inset-0 bg-gold/[0.02] rounded-lg blur-xl" />
+      <div
+        ref={containerRef}
+        className="relative panel-inset rounded-lg p-4"
+      />
+    </div>
   );
 }

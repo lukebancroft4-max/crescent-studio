@@ -5,12 +5,10 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 
 from models import GenerateRequest, BeatResponse, BeatHistoryItem
 from presets import get_presets
 from generator import generate_beat, OUTPUT_DIR
-from audio_processor import normalize_audio
 from midi_converter import audio_to_midi
 
 app = FastAPI(title="Beat Generator AI")
@@ -22,9 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory history (simple list, no DB needed)
 history: list[dict] = []
-
 HISTORY_FILE = OUTPUT_DIR / "history.json"
 
 
@@ -49,24 +45,19 @@ def get_preset_options():
 @app.post("/api/generate", response_model=BeatResponse)
 def generate(request: GenerateRequest):
     try:
-        beat_id, wav_path = generate_beat(request)
+        beat_id, audio_path = generate_beat(request)
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"AI generation failed: {e}")
 
-    try:
-        normalize_audio(wav_path)
-    except Exception:
-        pass  # Non-critical: skip normalization if it fails
-
     midi_path = OUTPUT_DIR / f"{beat_id}.mid"
     try:
-        audio_to_midi(wav_path, midi_path, target_bpm=request.bpm)
+        audio_to_midi(audio_path, midi_path, target_bpm=request.bpm)
     except Exception:
         pass  # Non-critical: MIDI conversion can fail gracefully
 
     response = BeatResponse(
         id=beat_id,
-        audio_url=f"/api/export/wav/{beat_id}",
+        audio_url=f"/api/export/audio/{beat_id}",
         midi_url=f"/api/export/midi/{beat_id}",
         params=request,
     )
@@ -76,7 +67,6 @@ def generate(request: GenerateRequest):
         "params": request.model_dump(),
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
-    # Keep last 50
     if len(history) > 50:
         history.pop()
     save_history()
@@ -84,12 +74,15 @@ def generate(request: GenerateRequest):
     return response
 
 
-@app.get("/api/export/wav/{beat_id}")
-def export_wav(beat_id: str):
+@app.get("/api/export/audio/{beat_id}")
+def export_audio(beat_id: str):
+    mp3_path = OUTPUT_DIR / f"{beat_id}.mp3"
+    if mp3_path.exists():
+        return FileResponse(mp3_path, media_type="audio/mpeg", filename=f"{beat_id}.mp3")
     wav_path = OUTPUT_DIR / f"{beat_id}.wav"
-    if not wav_path.exists():
-        raise HTTPException(status_code=404, detail="Beat not found")
-    return FileResponse(wav_path, media_type="audio/wav", filename=f"{beat_id}.wav")
+    if wav_path.exists():
+        return FileResponse(wav_path, media_type="audio/wav", filename=f"{beat_id}.wav")
+    raise HTTPException(status_code=404, detail="Beat not found")
 
 
 @app.get("/api/export/midi/{beat_id}")
