@@ -43,6 +43,7 @@ class Instrument(str, Enum):
     KALIMBA = "kalimba"
     ORGAN = "organ"
     FLUTE = "flute"
+    CHORD_PROGRESSION = "chord progression"
 
 
 class MusicalKey(str, Enum):
@@ -78,16 +79,30 @@ class GenerateRequest(BaseModel):
     duration: int = Field(default=120, ge=15, le=180)
     instruments: list[Instrument] = Field(min_length=1)
     custom_prompt: str = Field(default="", max_length=2000)
+    seed: int | None = None
 
 
 class BeatResponse(BaseModel):
     id: str
     audio_url: str
     midi_url: str
-    params: GenerateRequest
+    stems_url: str | None = None
+    params: GenerateRequest | None = None
 
 
 class BeatHistoryItem(BaseModel):
     id: str
-    params: GenerateRequest
+    params: GenerateRequest | None = None
     created_at: str
+
+
+class SfxRequest(BaseModel):
+    text: str = Field(max_length=500)
+    duration: float = Field(default=2.0, ge=0.5, le=30.0)
+    loop: bool = False
+    prompt_influence: float = Field(default=0.5, ge=0.0, le=1.0)
+
+
+class PlanGenerateRequest(BaseModel):
+    composition_plan: dict
+    seed: int | None = None

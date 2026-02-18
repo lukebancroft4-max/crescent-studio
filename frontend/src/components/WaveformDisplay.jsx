@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import WaveSurfer from "wavesurfer.js";
 
-export default function WaveformDisplay({ audioUrl, onReady }) {
+export default function WaveformDisplay({ audioUrl, onReady, muteAudio = false, seekTime }) {
   const containerRef = useRef(null);
   const wavesurferRef = useRef(null);
 
@@ -14,9 +14,9 @@ export default function WaveformDisplay({ audioUrl, onReady }) {
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "rgba(201, 169, 110, 0.35)",
-      progressColor: "rgba(201, 169, 110, 0.85)",
-      cursorColor: "rgba(228, 201, 138, 0.6)",
+      waveColor: "rgba(45, 122, 95, 0.3)",
+      progressColor: "rgba(45, 122, 95, 0.85)",
+      cursorColor: "rgba(30, 90, 67, 0.6)",
       barWidth: 2,
       barGap: 2,
       barRadius: 1,
@@ -29,6 +29,7 @@ export default function WaveformDisplay({ audioUrl, onReady }) {
     ws.load(audioUrl);
 
     ws.on("ready", () => {
+      if (muteAudio) ws.setVolume(0);
       if (onReady) onReady(ws);
     });
 
@@ -39,10 +40,27 @@ export default function WaveformDisplay({ audioUrl, onReady }) {
     };
   }, [audioUrl]);
 
+  // Mute/unmute when stem mode changes
+  useEffect(() => {
+    const ws = wavesurferRef.current;
+    if (!ws) return;
+    ws.setVolume(muteAudio ? 0 : 1);
+  }, [muteAudio]);
+
+  // Sync cursor position from Tone.js transport
+  useEffect(() => {
+    const ws = wavesurferRef.current;
+    if (!ws || seekTime === undefined || !ws.getDuration()) return;
+    const progress = seekTime / ws.getDuration();
+    if (progress >= 0 && progress <= 1) {
+      ws.seekTo(progress);
+    }
+  }, [seekTime]);
+
   return (
     <div className="relative">
       {/* Glow behind waveform */}
-      <div className="absolute inset-0 bg-gold/[0.02] rounded-lg blur-xl" />
+      <div className="absolute inset-0 bg-gold/[0.04] rounded-lg blur-xl" />
       <div
         ref={containerRef}
         className="relative panel-inset rounded-lg p-4"

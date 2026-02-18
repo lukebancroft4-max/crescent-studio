@@ -3,40 +3,65 @@ import { useState } from "react";
 export default function TransportBar({
   wavesurfer,
   currentBeat,
+  multiTrack,
   onDownloadAudio,
   onDownloadMidi,
+  onDownloadStems,
 }) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLooping, setIsLooping] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [localIsPlaying, setLocalIsPlaying] = useState(false);
+  const [localIsLooping, setLocalIsLooping] = useState(false);
+  const [localCurrentTime, setLocalCurrentTime] = useState(0);
+  const [localDuration, setLocalDuration] = useState(0);
+
+  const hasMultiTrack = multiTrack && multiTrack.isLoaded;
+
+  const isPlaying = hasMultiTrack ? multiTrack.isPlaying : localIsPlaying;
+  const currentTime = hasMultiTrack ? multiTrack.currentTime : localCurrentTime;
+  const duration = hasMultiTrack ? multiTrack.duration : localDuration;
+  const isLooping = hasMultiTrack ? multiTrack.isLooping : localIsLooping;
 
   function handlePlayPause() {
-    if (!wavesurfer) return;
-    wavesurfer.playPause();
-    setIsPlaying(!isPlaying);
+    if (hasMultiTrack) {
+      if (multiTrack.isPlaying) multiTrack.pause();
+      else multiTrack.play();
+    } else if (wavesurfer) {
+      wavesurfer.playPause();
+      setLocalIsPlaying(!localIsPlaying);
+    }
   }
 
   function handleStop() {
-    if (!wavesurfer) return;
-    wavesurfer.stop();
-    setIsPlaying(false);
+    if (hasMultiTrack) {
+      multiTrack.stop();
+    } else if (wavesurfer) {
+      wavesurfer.stop();
+      setLocalIsPlaying(false);
+    }
   }
 
-  if (wavesurfer && !wavesurfer._transportBound) {
+  function handleLoop() {
+    if (hasMultiTrack) {
+      multiTrack.toggleLoop();
+    } else {
+      setLocalIsLooping(!localIsLooping);
+    }
+  }
+
+  // Bind wavesurfer events for legacy mode
+  if (wavesurfer && !hasMultiTrack && !wavesurfer._transportBound) {
     wavesurfer.on("audioprocess", (time) => {
-      setCurrentTime(time);
-      setDuration(wavesurfer.getDuration());
+      setLocalCurrentTime(time);
+      setLocalDuration(wavesurfer.getDuration());
     });
     wavesurfer.on("finish", () => {
-      if (isLooping) {
+      if (localIsLooping) {
         wavesurfer.play(0);
       } else {
-        setIsPlaying(false);
+        setLocalIsPlaying(false);
       }
     });
     wavesurfer.on("seeking", () => {
-      setCurrentTime(wavesurfer.getCurrentTime());
+      setLocalCurrentTime(wavesurfer.getCurrentTime());
     });
     wavesurfer._transportBound = true;
   }
@@ -47,18 +72,20 @@ export default function TransportBar({
     return `${m}:${s.toString().padStart(2, "0")}`;
   }
 
+  const canPlay = hasMultiTrack || !!wavesurfer;
+
   return (
     <div className="panel rounded-lg px-5 py-3.5 flex items-center gap-5 flex-wrap">
       {/* Play/Pause */}
       <button
         onClick={handlePlayPause}
-        disabled={!wavesurfer}
+        disabled={!canPlay}
         className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-30 group"
         style={{
           background: isPlaying
-            ? "linear-gradient(135deg, rgba(201,169,110,0.2), rgba(201,169,110,0.1))"
-            : "linear-gradient(135deg, rgba(201,169,110,0.9), rgba(139,115,69,0.9))",
-          boxShadow: isPlaying ? "none" : "0 0 20px rgba(201,169,110,0.2)",
+            ? "linear-gradient(135deg, rgba(45,122,95,0.15), rgba(45,122,95,0.08))"
+            : "linear-gradient(135deg, rgba(45,122,95,0.9), rgba(30,90,67,0.9))",
+          boxShadow: isPlaying ? "none" : "0 0 20px rgba(45,122,95,0.15)",
         }}
       >
         {isPlaying ? (
@@ -67,7 +94,7 @@ export default function TransportBar({
             <rect x="9" y="1" width="4" height="12" rx="1" />
           </svg>
         ) : (
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-noir ml-0.5">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" className="text-white ml-0.5">
             <path d="M2 1.5L12 7L2 12.5V1.5Z" />
           </svg>
         )}
@@ -76,7 +103,7 @@ export default function TransportBar({
       {/* Stop */}
       <button
         onClick={handleStop}
-        disabled={!wavesurfer}
+        disabled={!canPlay}
         className="w-8 h-8 rounded flex items-center justify-center text-cream-muted hover:text-cream transition-colors disabled:opacity-30"
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
@@ -97,7 +124,7 @@ export default function TransportBar({
 
       {/* Loop */}
       <button
-        onClick={() => setIsLooping(!isLooping)}
+        onClick={handleLoop}
         className={`px-3 py-1 rounded text-[10px] tracking-[0.12em] uppercase transition-all duration-300 ${
           isLooping
             ? "bg-gold/15 text-gold border border-gold/30"
@@ -114,6 +141,9 @@ export default function TransportBar({
         <div className="flex gap-2">
           <DownloadButton onClick={onDownloadAudio} label="MP3" />
           <DownloadButton onClick={onDownloadMidi} label="MIDI" />
+          {onDownloadStems && (
+            <DownloadButton onClick={onDownloadStems} label="Stems" />
+          )}
         </div>
       )}
     </div>

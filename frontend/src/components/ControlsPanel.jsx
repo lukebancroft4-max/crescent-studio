@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { fetchPresets } from "../api/client";
+import { fetchPresets, createPlan } from "../api/client";
 
-export default function ControlsPanel({ onGenerate, isLoading }) {
+export default function ControlsPanel({ onGenerate, isLoading, onPlanCreated }) {
   const [presets, setPresets] = useState(null);
   const [genre, setGenre] = useState("afrobeats");
   const [bpm, setBpm] = useState(106);
@@ -10,6 +10,7 @@ export default function ControlsPanel({ onGenerate, isLoading }) {
   const [duration, setDuration] = useState(120);
   const [instruments, setInstruments] = useState(["drums", "bass", "shakers", "congas"]);
   const [customPrompt, setCustomPrompt] = useState("");
+  const [isPlanLoading, setIsPlanLoading] = useState(false);
 
   useEffect(() => {
     fetchPresets().then(setPresets).catch(console.error);
@@ -63,7 +64,7 @@ export default function ControlsPanel({ onGenerate, isLoading }) {
           placeholder="Nigerian Afrobeats gyration instrumental, heavy Afro swing drums, punchy kick, shakers, congas, talking drum accents, rolling bassline, instrumental only..."
           rows={4}
           maxLength={2000}
-          className="w-full bg-noir/60 text-cream text-sm rounded-md px-4 py-3 border border-border-subtle focus:border-gold/40 transition-colors resize-y placeholder-cream-muted/40 leading-relaxed"
+          className="w-full bg-surface text-cream text-sm rounded-md px-4 py-3 border border-border-subtle focus:border-gold/40 transition-colors resize-y placeholder-cream-muted/40 leading-relaxed"
         />
         {hasCustomPrompt && (
           <p className="text-gold-dim text-[10px] tracking-[0.12em] uppercase mt-2">
@@ -146,9 +147,9 @@ export default function ControlsPanel({ onGenerate, isLoading }) {
             <select
               value={musicalKey}
               onChange={(e) => setMusicalKey(e.target.value)}
-              className="w-full bg-noir/60 text-cream text-sm rounded-md px-4 py-2.5 border border-border-subtle focus:border-gold/40 transition-colors appearance-none cursor-pointer"
+              className="w-full bg-surface text-cream text-sm rounded-md px-4 py-2.5 border border-border-subtle focus:border-gold/40 transition-colors appearance-none cursor-pointer"
               style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A8A29E' stroke-width='2'%3E%3Cpolyline points='6,9 12,15 18,9'/%3E%3C/svg%3E")`,
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%232D7A5F' stroke-width='2'%3E%3Cpolyline points='6,9 12,15 18,9'/%3E%3C/svg%3E")`,
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "right 12px center",
               }}
@@ -205,19 +206,47 @@ export default function ControlsPanel({ onGenerate, isLoading }) {
 
       <Divider />
 
-      {/* Generate */}
-      <button
-        type="submit"
-        disabled={isLoading || (instruments.length === 0 && !hasCustomPrompt)}
-        className="group relative w-full py-3.5 rounded-md text-sm tracking-[0.12em] uppercase font-medium transition-all duration-500 disabled:opacity-30 disabled:cursor-not-allowed overflow-hidden"
-      >
-        {/* Button background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-gold-dim via-gold to-gold-dim opacity-90 group-hover:opacity-100 transition-opacity" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-        <span className="relative text-noir font-semibold">
-          {isLoading ? "Generating..." : "Generate"}
-        </span>
-      </button>
+      {/* Generate + Plan buttons */}
+      <div className="space-y-2.5">
+        <button
+          type="submit"
+          disabled={isLoading || isPlanLoading || (instruments.length === 0 && !hasCustomPrompt)}
+          className="group relative w-full py-3.5 rounded-md text-sm tracking-[0.12em] uppercase font-medium transition-all duration-500 disabled:opacity-30 disabled:cursor-not-allowed overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-gold-dim via-gold to-gold-dim opacity-90 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+          <span className="relative text-white font-semibold">
+            {isLoading ? "Generating..." : "Generate"}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          disabled={isLoading || isPlanLoading || (instruments.length === 0 && !hasCustomPrompt)}
+          onClick={async () => {
+            setIsPlanLoading(true);
+            try {
+              const plan = await createPlan({
+                genre,
+                bpm,
+                mood,
+                key: musicalKey,
+                duration,
+                instruments: instruments.length > 0 ? instruments : ["drums"],
+                custom_prompt: customPrompt,
+              });
+              if (onPlanCreated) onPlanCreated(plan);
+            } catch (err) {
+              console.error("Plan creation failed:", err);
+            } finally {
+              setIsPlanLoading(false);
+            }
+          }}
+          className="w-full py-2.5 rounded-md text-[11px] tracking-[0.12em] uppercase font-medium text-cream-muted border border-border-subtle hover:border-gold/30 hover:text-gold transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          {isPlanLoading ? "Creating Plan..." : "Preview Plan (Free)"}
+        </button>
+      </div>
     </form>
   );
 }

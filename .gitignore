@@ -10,6 +10,10 @@ frontend/dist/
 
 # Generated files
 output/
+dist-electron/
+build-tmp/
+backend-dist/
+frontend/release/
 
 # OS
 .DS_Store
