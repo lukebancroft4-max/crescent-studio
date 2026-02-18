@@ -1,19 +1,36 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
 .venv/
+*.egg-info/
+*.egg
+
+# Environment
 backend/.env
+.env.local
 
 # Node
 node_modules/
 frontend/dist/
-
-# Generated files
-output/
 dist-electron/
+
+# Build artifacts
 build-tmp/
 backend-dist/
 frontend/release/
+*.spec.bak
+
+# Generated output
+output/
 
 # OS
 .DS_Store
+Thumbs.db
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
