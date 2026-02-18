@@ -1,4 +1,4 @@
-import { Routes, Route, NavLink, useLocation } from "react-router-dom";
+import { Routes, Route, NavLink, useLocation, useNavigate } from "react-router-dom";
 import GlobalTransport from "../components/GlobalTransport";
 import StudioPage from "../pages/StudioPage";
 import LibraryPage from "../pages/LibraryPage";
@@ -91,6 +91,7 @@ const PAGE_TITLES = {
 
 export default function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate();
   const pageTitle = PAGE_TITLES[location.pathname] || "Studio";
 
   return (
@@ -101,7 +102,29 @@ export default function AppShell() {
       {/* Header */}
       <header className="relative border-b border-border-subtle shrink-0 z-10">
         <div className="px-8 py-4 flex items-end justify-between">
-          <div className="flex items-baseline gap-4">
+          <div className="flex items-center gap-4">
+            {/* Back / Forward navigation */}
+            <div className="flex items-center gap-1 mr-2">
+              <button
+                onClick={() => navigate(-1)}
+                className="w-7 h-7 rounded-md flex items-center justify-center text-cream-muted/40 hover:text-cream hover:bg-surface-raised/50 transition-all duration-200"
+                title="Back"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 2L4 7l5 5" />
+                </svg>
+              </button>
+              <button
+                onClick={() => navigate(1)}
+                className="w-7 h-7 rounded-md flex items-center justify-center text-cream-muted/40 hover:text-cream hover:bg-surface-raised/50 transition-all duration-200"
+                title="Forward"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 2l5 5-5 5" />
+                </svg>
+              </button>
+            </div>
+
             <h1 className="font-display text-2xl md:text-3xl font-light tracking-[0.08em] text-cream text-gold-glow">
               CRESCENT
             </h1>

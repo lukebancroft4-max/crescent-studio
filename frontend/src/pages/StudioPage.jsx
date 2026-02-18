@@ -40,10 +40,18 @@ export default function StudioPage() {
               <div className="w-5 h-5 rounded-full border border-danger/60 flex items-center justify-center shrink-0 mt-0.5">
                 <span className="text-danger text-xs">!</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-cream text-sm font-medium">Generation Failed</p>
                 <p className="text-cream-muted text-xs mt-1 leading-relaxed">{error}</p>
               </div>
+              <button
+                onClick={() => useAudioStore.setState({ error: null })}
+                className="text-cream-muted/40 hover:text-cream-muted transition-colors shrink-0"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M2 2l8 8M10 2l-8 8" />
+                </svg>
+              </button>
             </div>
           </div>
         )}

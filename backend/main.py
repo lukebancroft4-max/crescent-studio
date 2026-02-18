@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,29 +17,47 @@ from generator import (
 from midi_converter import audio_to_midi
 from plugin_router import router as plugin_router
 
-app = FastAPI(title="Beat Generator AI")
+app = FastAPI(title="Crescent Studio API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origin_regex=r"http://localhost:\d+",
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(plugin_router)
 
+BEAT_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+
 history: list[dict] = []
 HISTORY_FILE = OUTPUT_DIR / "history.json"
 
 
+def validate_beat_id(beat_id: str):
+    if not BEAT_ID_PATTERN.match(beat_id):
+        raise HTTPException(status_code=400, detail="Invalid beat ID")
+
+
+def validate_stem_name(stem_name: str):
+    if ".." in stem_name or stem_name.startswith("/"):
+        raise HTTPException(status_code=400, detail="Invalid stem name")
+
+
 def load_history():
     global history
-    if HISTORY_FILE.exists():
-        history = json.loads(HISTORY_FILE.read_text())
+    try:
+        if HISTORY_FILE.exists():
+            history = json.loads(HISTORY_FILE.read_text())
+    except (json.JSONDecodeError, OSError):
+        history = []
 
 
 def save_history():
-    HISTORY_FILE.write_text(json.dumps(history, indent=2))
+    try:
+        HISTORY_FILE.write_text(json.dumps(history, indent=2))
+    except OSError:
+        pass
 
 
 load_history()
@@ -84,6 +103,7 @@ def generate(request: GenerateRequest):
 
 @app.get("/api/export/audio/{beat_id}")
 def export_audio(beat_id: str):
+    validate_beat_id(beat_id)
     mp3_path = OUTPUT_DIR / f"{beat_id}.mp3"
     if mp3_path.exists():
         return FileResponse(mp3_path, media_type="audio/mpeg", filename=f"{beat_id}.mp3")
@@ -95,6 +115,7 @@ def export_audio(beat_id: str):
 
 @app.get("/api/export/midi/{beat_id}")
 def export_midi(beat_id: str):
+    validate_beat_id(beat_id)
     midi_path = OUTPUT_DIR / f"{beat_id}.mid"
     if not midi_path.exists():
         raise HTTPException(status_code=404, detail="MIDI not found")
@@ -121,6 +142,7 @@ def get_status():
 
 @app.post("/api/separate/{beat_id}")
 def separate(beat_id: str):
+    validate_beat_id(beat_id)
     mp3_path = OUTPUT_DIR / f"{beat_id}.mp3"
     if not mp3_path.exists():
         raise HTTPException(status_code=404, detail="Beat not found")
@@ -136,6 +158,7 @@ def separate(beat_id: str):
 
 @app.get("/api/stems/{beat_id}")
 def list_stems(beat_id: str):
+    validate_beat_id(beat_id)
     manifest_path = OUTPUT_DIR / f"{beat_id}_stems" / "stems.json"
     if not manifest_path.exists():
         raise HTTPException(status_code=404, detail="Stems not available")
@@ -145,6 +168,7 @@ def list_stems(beat_id: str):
 
 @app.get("/api/stems-zip/{beat_id}")
 def download_all_stems(beat_id: str):
+    validate_beat_id(beat_id)
     zip_path = OUTPUT_DIR / f"{beat_id}_stems.zip"
     if not zip_path.exists():
         raise HTTPException(status_code=404, detail="Stems ZIP not found")
@@ -157,6 +181,8 @@ def download_all_stems(beat_id: str):
 
 @app.get("/api/stems/{beat_id}/{stem_name:path}")
 def get_stem(beat_id: str, stem_name: str):
+    validate_beat_id(beat_id)
+    validate_stem_name(stem_name)
     stem_path = OUTPUT_DIR / f"{beat_id}_stems" / stem_name
     if not stem_path.exists():
         raise HTTPException(status_code=404, detail="Stem not found")

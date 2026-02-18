@@ -9,7 +9,19 @@ export default function SfxLabPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("crescent_sfx_history") || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("crescent_sfx_history", JSON.stringify(history));
+    } catch {}
+  }, [history]);
 
   async function handleGenerate() {
     if (!text.trim()) return;
@@ -151,7 +163,7 @@ export default function SfxLabPage() {
         <div className="mb-6">
           <h3 className="font-display text-lg text-cream tracking-wide">SFX Library</h3>
           <p className="text-cream-muted text-xs tracking-[0.1em] mt-1">
-            {history.length} effect{history.length !== 1 ? "s" : ""} this session
+            {history.length} effect{history.length !== 1 ? "s" : ""} generated
           </p>
         </div>
 

@@ -1,14 +1,17 @@
+import re
 import uuid
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
+from pedalboard import load_plugin
 from pydantic import BaseModel
 
 from generator import OUTPUT_DIR
-from plugin_scanner import scan_plugins, process_audio_through_plugins, load_plugin
+from plugin_scanner import scan_plugins, process_audio_through_plugins
 
 router = APIRouter(prefix="/api/plugins")
+
+BEAT_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 # In-memory plugin cache
 _cached_plugins = []
@@ -62,9 +65,14 @@ def get_plugin_params(plugin_path: str):
 
 @router.post("/process")
 def process_stem(body: ProcessRequest):
+    if not BEAT_ID_PATTERN.match(body.beat_id):
+        raise HTTPException(status_code=400, detail="Invalid beat ID")
+    if ".." in body.stem_name or body.stem_name.startswith("/"):
+        raise HTTPException(status_code=400, detail="Invalid stem name")
+
     stems_dir = OUTPUT_DIR / f"{body.beat_id}_stems"
     input_path = stems_dir / body.stem_name
-    if not input_path.exists():
+    if not input_path.exists() or not input_path.is_file():
         raise HTTPException(status_code=404, detail="Stem not found")
 
     output_name = f"processed_{uuid.uuid4().hex[:8]}_{body.stem_name}"

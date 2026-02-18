@@ -163,7 +163,6 @@ def generate_from_plan(composition_plan: dict, seed: int | None = None) -> tuple
     body = {
         "composition_plan": composition_plan,
         "model_id": MODEL_ID,
-        "force_instrumental": True,
     }
     if seed is not None:
         body["seed"] = seed

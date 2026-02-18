@@ -19,11 +19,15 @@ export default function SettingsPage() {
   const settings = useSettingsStore();
   const [apiStatus, setApiStatus] = useState(null);
 
+  const apiBase = import.meta.env.VITE_API_BASE ?? "/api";
+
   useEffect(() => {
-    fetch("/api/status")
+    const controller = new AbortController();
+    fetch(`${apiBase}/status`, { signal: controller.signal })
       .then((r) => r.ok ? r.json() : null)
       .catch(() => null)
       .then(setApiStatus);
+    return () => controller.abort();
   }, []);
 
   return (
@@ -189,16 +193,19 @@ export default function SettingsPage() {
       <Section title="About">
         <div className="panel rounded-lg p-5">
           <div className="space-y-2">
-            <p className="text-cream text-sm font-display tracking-wide">CRESCENT</p>
+            <p className="text-cream text-sm font-display tracking-wide">CRESCENT STUDIO</p>
             <p className="text-cream-muted text-xs leading-relaxed">
-              AI-powered beat generation studio built with ElevenLabs Music API,
-              Tone.js multi-track audio engine, and real-time stem separation.
+              AI-powered beat generation studio with real-time Tone.js effects,
+              VST3 plugin support, stem separation, and multi-track arranging.
             </p>
-            <div className="flex gap-4 pt-2 text-cream-muted/50 text-[10px] tracking-[0.1em] uppercase">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 text-cream-muted/50 text-[10px] tracking-[0.1em] uppercase">
+              <span>Electron</span>
               <span>React 19</span>
               <span>Tone.js</span>
+              <span>VST3</span>
               <span>ElevenLabs v1</span>
             </div>
+            <p className="text-cream-muted/30 text-[10px] pt-1">v1.0.0</p>
           </div>
         </div>
       </Section>

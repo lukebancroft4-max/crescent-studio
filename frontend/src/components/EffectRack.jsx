@@ -103,14 +103,10 @@ export default function EffectRack({ stemIndex }) {
                         max={range.max}
                         step={range.step}
                         value={value}
-                        onChange={(e) =>
-                          handleParamChange(
-                            effect.id,
-                            effectIndex,
-                            paramKey,
-                            parseFloat(e.target.value)
-                          )
-                        }
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value);
+                          if (!isNaN(v)) handleParamChange(effect.id, effectIndex, paramKey, v);
+                        }}
                         className="flex-1 h-1"
                       />
                       <span className="text-cream-muted/40 text-[9px] w-14 text-right tabular-nums">
