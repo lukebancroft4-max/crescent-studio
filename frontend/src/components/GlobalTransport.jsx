@@ -25,79 +25,99 @@ export default function GlobalTransport() {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="border-t border-border-subtle bg-surface">
+    <footer className="border-t border-border-subtle bg-surface/90 glass shrink-0" role="region" aria-label="Playback controls">
       {/* Progress bar */}
       <div className="h-[2px] bg-border-subtle">
         <div
-          className="h-full bg-gold transition-all duration-100"
+          className="h-full bg-gradient-to-r from-gold-dim via-gold to-gold-bright transition-all duration-100"
           style={{ width: `${progress}%` }}
+          role="progressbar"
+          aria-valuenow={Math.round(progress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
         />
       </div>
 
-      <div className="px-5 py-2.5 flex items-center gap-4">
-        {/* Play/Pause */}
-        <button
-          onClick={() => (isPlaying ? pause() : play())}
-          disabled={!isLoaded}
-          className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-30"
-          style={{
-            background: isPlaying
-              ? "rgba(45,122,95,0.12)"
-              : "linear-gradient(135deg, rgba(45,122,95,0.9), rgba(30,90,67,0.9))",
-          }}
-        >
-          {isPlaying ? (
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor" className="text-gold">
-              <rect x="1" y="1" width="4" height="12" rx="1" />
-              <rect x="9" y="1" width="4" height="12" rx="1" />
-            </svg>
-          ) : (
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor" className="text-white ml-0.5">
-              <path d="M2 1.5L12 7L2 12.5V1.5Z" />
-            </svg>
-          )}
-        </button>
+      <div className="px-5 py-3 flex items-center gap-4">
+        {/* Transport buttons */}
+        <div className="flex items-center gap-2">
+          {/* Play/Pause */}
+          <button
+            onClick={() => (isPlaying ? pause() : play())}
+            disabled={!isLoaded}
+            aria-label={isPlaying ? "Pause" : "Play"}
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:outline-none"
+            style={{
+              background: isPlaying
+                ? "rgba(139,92,246,0.15)"
+                : "linear-gradient(135deg, #8b5cf6, #6d28d9)",
+              boxShadow: isPlaying ? "none" : "0 4px 16px rgba(139,92,246,0.3)",
+            }}
+          >
+            {isPlaying ? (
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor" className="text-gold">
+                <rect x="1" y="1" width="4" height="12" rx="1" />
+                <rect x="9" y="1" width="4" height="12" rx="1" />
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor" className="text-white ml-0.5">
+                <path d="M2 1.5L12 7L2 12.5V1.5Z" />
+              </svg>
+            )}
+          </button>
 
-        {/* Stop */}
-        <button
-          onClick={stop}
-          disabled={!isLoaded}
-          className="w-7 h-7 rounded flex items-center justify-center text-cream-muted hover:text-cream transition-colors disabled:opacity-30"
-        >
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
-            <rect x="1" y="1" width="10" height="10" rx="1" />
-          </svg>
-        </button>
+          {/* Stop */}
+          <button
+            onClick={stop}
+            disabled={!isLoaded}
+            aria-label="Stop"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-cream-muted hover:text-cream hover:bg-surface-raised transition-all duration-200 disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:outline-none"
+          >
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
+              <rect x="1" y="1" width="10" height="10" rx="2" />
+            </svg>
+          </button>
+        </div>
 
-        {/* Time */}
-        <div className="flex items-baseline gap-1">
-          <span className="font-display text-lg text-cream tabular-nums">
+        {/* Time display */}
+        <div className="flex items-baseline gap-1 font-mono">
+          <span className="text-lg text-cream tabular-nums tracking-tight">
             {formatTime(currentTime)}
           </span>
-          <span className="text-cream-muted/40 text-[10px]">/</span>
-          <span className="text-cream-muted text-[10px] tabular-nums">
+          <span className="text-cream-muted/40 text-xs">/</span>
+          <span className="text-cream-muted text-xs tabular-nums">
             {formatTime(duration)}
           </span>
         </div>
 
-        {/* Loop */}
+        {/* Loop toggle */}
         <button
           onClick={toggleLoop}
-          className={`px-2.5 py-0.5 rounded text-[9px] tracking-[0.12em] uppercase transition-all duration-300 ${
+          aria-label={isLooping ? "Disable loop" : "Enable loop"}
+          aria-pressed={isLooping}
+          className={`px-2.5 py-1 rounded-md text-[9px] tracking-[0.14em] uppercase font-medium transition-all duration-200 focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:outline-none ${
             isLooping
-              ? "bg-gold/15 text-gold border border-gold/30"
-              : "text-cream-muted/50 border border-border-subtle hover:text-cream-muted"
+              ? "bg-gold/15 text-gold border border-gold/30 shadow-sm shadow-gold/10"
+              : "text-cream-muted/50 border border-border-subtle hover:text-cream-muted hover:border-border"
           }`}
         >
           Loop
         </button>
 
-        {/* Beat info */}
-        <div className="flex-1 flex items-center justify-center">
+        {/* Beat info — centered */}
+        <div className="flex-1 flex items-center justify-center gap-3">
           {currentBeat.params ? (
-            <span className="text-cream-muted text-[10px] tracking-[0.1em] uppercase">
-              {currentBeat.params.genre.replace("-", " ")} &middot; {currentBeat.params.bpm} BPM &middot; {currentBeat.params.key}
-            </span>
+            <>
+              <span className="px-3 py-1 rounded-full text-[10px] tracking-[0.12em] uppercase bg-gold/10 text-gold-bright border border-gold/20 font-medium">
+                {currentBeat.params.genre.replace("-", " ")}
+              </span>
+              <span className="px-3 py-1 rounded-full text-[10px] tracking-[0.12em] uppercase bg-surface-raised text-cream-muted border border-border-subtle">
+                {currentBeat.params.bpm} BPM
+              </span>
+              <span className="px-3 py-1 rounded-full text-[10px] tracking-[0.12em] uppercase bg-surface-raised text-cream-muted border border-border-subtle hidden sm:inline-flex">
+                {currentBeat.params.key}
+              </span>
+            </>
           ) : (
             <span className="text-cream-muted text-[10px] tracking-[0.1em] uppercase">
               {currentBeat.id}
@@ -114,7 +134,7 @@ export default function GlobalTransport() {
           )}
         </div>
       </div>
-    </div>
+    </footer>
   );
 }
 
@@ -122,7 +142,7 @@ function MiniDownload({ onClick, label }) {
   return (
     <button
       onClick={onClick}
-      className="px-2.5 py-1 rounded text-[9px] tracking-[0.08em] uppercase text-cream-muted/60 border border-border-subtle hover:text-gold hover:border-gold/30 transition-all duration-300"
+      className="px-2.5 py-1.5 rounded-lg text-[9px] tracking-[0.1em] uppercase text-cream-muted/60 border border-border-subtle hover:text-gold hover:border-gold/30 hover:bg-gold/5 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:outline-none"
     >
       {label}
     </button>

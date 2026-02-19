@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { fetchHistory, getAudioUrl, getMidiUrl, getStemsZipUrl } from "../api/client";
+import { fetchHistory, getAudioUrl, getMidiUrl } from "../api/client";
 import { useAudioStore } from "../stores/audioStore";
 import { useNavigate } from "react-router-dom";
 
