@@ -33,7 +33,7 @@ export default function Modal({
     const el = dialogRef.current;
     if (!el) return;
     const focusable = el.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), [contenteditable="true"], [role="button"], [role="link"], [role="menuitem"]'
     );
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
