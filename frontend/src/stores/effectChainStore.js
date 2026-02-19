@@ -120,7 +120,7 @@ export const PARAM_RANGES = {
   },
 };
 
-export const useEffectChainStore = create((set, get) => ({
+export const useEffectChainStore = create((set, _get) => ({
   chains: {},
 
   addEffect: (stemIndex, type) => {

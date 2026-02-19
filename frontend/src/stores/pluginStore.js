@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "/api";
 
-export const usePluginStore = create((set, get) => ({
+export const usePluginStore = create((set, _get) => ({
   plugins: [],
   isScanning: false,
   error: null,
