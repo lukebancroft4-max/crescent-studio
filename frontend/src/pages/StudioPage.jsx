@@ -3,6 +3,8 @@ import ControlsPanel from "../components/ControlsPanel";
 import WaveformDisplay from "../components/WaveformDisplay";
 import TrackMixer from "../components/TrackMixer";
 import PlanPreview from "../components/PlanPreview";
+import Hero from "../components/landing/Hero";
+import QuickStart from "../components/landing/QuickStart";
 import { getAudioUrl } from "../api/client";
 
 export default function StudioPage() {
@@ -140,33 +142,9 @@ export default function StudioPage() {
 
         {/* Empty state */}
         {!currentBeat && !isLoading && !error && !planData && (
-          <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-up">
-            <div className="flex items-end gap-[3px] h-16 mb-8 opacity-20">
-              {[20, 35, 55, 40, 60, 45, 30, 50, 35, 55, 25, 45, 60, 35, 20].map((h, i) => (
-                <div
-                  key={i}
-                  className="w-[3px] bg-gold rounded-full"
-                  style={{
-                    height: `${h}%`,
-                    animationDelay: `${i * 0.1}s`,
-                  }}
-                />
-              ))}
-            </div>
-            <h2 className="font-display text-2xl md:text-3xl text-cream/80 tracking-wide font-light">
-              Your Studio Awaits
-            </h2>
-            <p className="text-cream-muted text-sm mt-3 max-w-md leading-relaxed">
-              Configure your sound on the left, or write a custom prompt to
-              describe exactly what you hear in your mind.
-            </p>
-            <div className="flex items-center gap-3 mt-8 text-gold-dim text-xs tracking-[0.15em] uppercase">
-              <span>Select</span>
-              <span className="w-8 h-px bg-gold-dim/40" />
-              <span>Configure</span>
-              <span className="w-8 h-px bg-gold-dim/40" />
-              <span>Generate</span>
-            </div>
+          <div className="space-y-8 animate-fade-up">
+            <Hero onGetStarted={() => document.querySelector("[data-generate-btn]")?.click()} />
+            <QuickStart />
           </div>
         )}
       </main>
