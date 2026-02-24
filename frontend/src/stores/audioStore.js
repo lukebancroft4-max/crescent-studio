@@ -4,7 +4,9 @@ import {
   generateBeat as apiGenerateBeat,
   separateStems as apiSeparateStems,
   getStemUrl,
+  getAudioUrl,
   generateFromPlan as apiGenerateFromPlan,
+  renderOffline as apiRenderOffline,
 } from "../api/client";
 
 let _players = [];
@@ -173,6 +175,18 @@ export const useAudioStore = create((set, get) => ({
       set({ error: err.message });
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  renderOffline: async (params) => {
+    cleanupAudio(set);
+    set({ isLoading: true, error: null, currentBeat: null, stemData: null, planData: null });
+
+    try {
+      const beat = await apiRenderOffline(params);
+      set({ currentBeat: beat, isLoading: false });
+    } catch (err) {
+      set({ error: err.message, isLoading: false });
     }
   },
 

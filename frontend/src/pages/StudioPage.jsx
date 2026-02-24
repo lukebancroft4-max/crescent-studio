@@ -16,6 +16,7 @@ export default function StudioPage() {
   const currentTime = useAudioStore((s) => s.currentTime);
   const generateBeat = useAudioStore((s) => s.generateBeat);
   const generateFromPlan = useAudioStore((s) => s.generateFromPlan);
+  const renderOffline = useAudioStore((s) => s.renderOffline);
   const setPlanData = useAudioStore((s) => s.setPlanData);
 
   const hasStemMixer = !!(stemData && isLoaded);
@@ -28,6 +29,7 @@ export default function StudioPage() {
           onGenerate={generateBeat}
           isLoading={isLoading}
           onPlanCreated={(plan) => setPlanData(plan)}
+          onRenderOffline={renderOffline}
         />
       </aside>
 

@@ -82,6 +82,39 @@ export async function generateFromPlan(compositionPlan, seed = null) {
   return res.json();
 }
 
+export async function renderOffline(params) {
+  const res = await fetch(`${API_BASE}/render-offline`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Offline render failed" }));
+    throw new Error(err.detail || "Offline render failed");
+  }
+  return res.json();
+}
+
+export async function getSampleLibraryStatus() {
+  const res = await fetch(`${API_BASE}/samples/status`);
+  if (!res.ok) throw new Error("Failed to fetch sample library status");
+  return res.json();
+}
+
+export async function generateSampleLibrary(only = null) {
+  const body = only ? { only } : {};
+  const res = await fetch(`${API_BASE}/samples/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Sample generation failed" }));
+    throw new Error(err.detail || "Sample generation failed");
+  }
+  return res.json();
+}
+
 export async function generateSfx(params) {
   const res = await fetch(`${API_BASE}/sfx`, {
     method: "POST",

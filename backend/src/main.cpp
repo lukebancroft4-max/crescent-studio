@@ -5,6 +5,8 @@
 #include "presets.h"
 #include "utils.h"
 #include "midi_writer.h"
+#include "sample_library.h"
+#include "beat_renderer.h"
 
 #include <filesystem>
 #include <iostream>
@@ -21,6 +23,10 @@ static fs::path g_history_file;
 
 // Plugin cache (VST3 filesystem scan only — no pedalboard dependency)
 static json g_plugins = json::array();
+
+// Offline renderer sample bank (loaded on first use)
+static renderer::SampleBank g_sample_bank;
+static std::mutex g_sample_bank_mutex;
 
 // --- History persistence ---
 
@@ -417,6 +423,150 @@ int main(int argc, char* argv[]) {
             res.set_content(response.dump(), "application/json");
         } catch (const std::exception& e) {
             error_response(res, 503, std::string("SFX generation failed: ") + e.what());
+        }
+    });
+
+    // --- GET /api/samples/status ---
+    svr.Get("/api/samples/status", [](const httplib::Request&, httplib::Response& res) {
+        auto& lib = samples::get_all_percussion_samples();
+        int total = (int)lib.size();
+        auto missing = samples::get_missing_samples(g_cfg.output_dir);
+        int available = total - (int)missing.size();
+
+        json missing_arr = json::array();
+        for (auto& m : missing) missing_arr.push_back(m);
+
+        json j = {
+            {"complete", missing.empty()},
+            {"total", total},
+            {"available", available},
+            {"missing", missing_arr},
+        };
+        res.set_content(j.dump(), "application/json");
+    });
+
+    // --- POST /api/samples/generate ---
+    svr.Post("/api/samples/generate", [](const httplib::Request& req, httplib::Response& res) {
+        try {
+            // Optional: only generate specific samples
+            std::vector<std::string> only;
+            if (!req.body.empty()) {
+                try {
+                    auto j = json::parse(req.body);
+                    if (j.contains("only")) {
+                        for (auto& name : j["only"])
+                            only.push_back(name.get<std::string>());
+                    }
+                } catch (...) {}
+            }
+
+            auto& lib = samples::get_all_percussion_samples();
+            auto dir = samples::library_dir(g_cfg.output_dir);
+            fs::create_directories(dir);
+
+            auto manifest = samples::load_manifest(g_cfg.output_dir);
+            int generated = 0;
+            json errors = json::array();
+
+            for (auto& s : lib) {
+                // Filter by "only" list if provided
+                if (!only.empty() &&
+                    std::find(only.begin(), only.end(), s.name) == only.end()) {
+                    continue;
+                }
+
+                // Skip if already exists
+                if (manifest.contains(s.name) &&
+                    fs::exists(dir / manifest[s.name].get<std::string>())) {
+                    continue;
+                }
+
+                try {
+                    auto sfx_id = generate_sound_effect(g_cfg, s.prompt,
+                                                         s.duration, false, 0.8);
+                    // Move the generated file to sample library
+                    auto src = g_cfg.output_dir / (sfx_id + ".mp3");
+                    auto dst = dir / (s.name + ".mp3");
+                    if (fs::exists(src)) {
+                        fs::rename(src, dst);
+                        manifest[s.name] = s.name + ".mp3";
+                        samples::save_manifest(g_cfg.output_dir, manifest);
+                        generated++;
+                    }
+                } catch (const std::exception& e) {
+                    errors.push_back({{"sample", s.name}, {"error", e.what()}});
+                }
+            }
+
+            json response = {
+                {"generated", generated},
+                {"total", (int)lib.size()},
+                {"available", samples::count_available(g_cfg.output_dir)},
+                {"complete", samples::is_library_complete(g_cfg.output_dir)},
+                {"errors", errors},
+            };
+            res.set_content(response.dump(), "application/json");
+        } catch (const std::exception& e) {
+            error_response(res, 503, std::string("Sample generation failed: ") + e.what());
+        }
+    });
+
+    // --- POST /api/render-offline ---
+    svr.Post("/api/render-offline", [](const httplib::Request& req, httplib::Response& res) {
+        try {
+            auto j = json::parse(req.body);
+
+            Genre genre = Genre::AFROBEATS;
+            int bpm = 120;
+            double duration = 30.0;
+
+            if (j.contains("genre"))    genre = genre_from_str(j["genre"].get<std::string>());
+            if (j.contains("bpm"))      bpm = j["bpm"].get<int>();
+            if (j.contains("duration")) duration = j["duration"].get<double>();
+
+            // Load sample bank if not already loaded
+            {
+                std::lock_guard lock(g_sample_bank_mutex);
+                if (!g_sample_bank.loaded) {
+                    if (!g_sample_bank.load(g_cfg.output_dir)) {
+                        error_response(res, 400,
+                            "Sample library not available. Generate samples first via POST /api/samples/generate");
+                        return;
+                    }
+                }
+            }
+
+            // Render beat to WAV
+            auto beat_id = renderer::render_beat(g_sample_bank, g_cfg.output_dir,
+                                                  genre, bpm, duration);
+
+            // Generate MIDI file
+            auto midi_path = g_cfg.output_dir / (beat_id + ".mid");
+            midi::write_drum_midi(midi_path.string(), bpm, duration, genre);
+
+            json response = {
+                {"id", beat_id},
+                {"audio_url", "/api/export/audio/" + beat_id},
+                {"midi_url", "/api/export/midi/" + beat_id},
+                {"offline", true},
+            };
+
+            // Add to history
+            {
+                std::lock_guard lock(g_history_mutex);
+                g_history.insert(g_history.begin(), json{
+                    {"id", beat_id},
+                    {"params", {{"genre", genre_to_str(genre)}, {"bpm", bpm},
+                                {"duration", duration}, {"offline", true}}},
+                    {"created_at", utc_now_iso()},
+                });
+                if (g_history.size() > 50) g_history.erase(g_history.end() - 1);
+                save_history();
+            }
+
+            res.set_content(response.dump(), "application/json");
+        } catch (const std::exception& e) {
+            error_response(res, 503, std::string("Offline render failed: ") + e.what());
         }
     });
 

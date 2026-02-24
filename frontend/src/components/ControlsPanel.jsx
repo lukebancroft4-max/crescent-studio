@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { fetchPresets, createPlan } from "../api/client";
+import { fetchPresets, createPlan, getSampleLibraryStatus } from "../api/client";
 
-export default function ControlsPanel({ onGenerate, isLoading, onPlanCreated }) {
+export default function ControlsPanel({ onGenerate, isLoading, onPlanCreated, onRenderOffline }) {
   const [presets, setPresets] = useState(null);
   const [genre, setGenre] = useState("afrobeats");
   const [bpm, setBpm] = useState(106);
@@ -11,9 +11,11 @@ export default function ControlsPanel({ onGenerate, isLoading, onPlanCreated }) 
   const [instruments, setInstruments] = useState(["drums", "bass", "shakers", "congas"]);
   const [customPrompt, setCustomPrompt] = useState("");
   const [isPlanLoading, setIsPlanLoading] = useState(false);
+  const [sampleLibrary, setSampleLibrary] = useState(null);
 
   useEffect(() => {
     fetchPresets().then(setPresets).catch(console.error);
+    getSampleLibraryStatus().then(setSampleLibrary).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -246,6 +248,25 @@ export default function ControlsPanel({ onGenerate, isLoading, onPlanCreated }) 
         >
           {isPlanLoading ? "Creating Plan..." : "Preview Plan (Free)"}
         </button>
+
+        {sampleLibrary && sampleLibrary.available > 0 && (
+          <button
+            type="button"
+            disabled={isLoading || !sampleLibrary.complete}
+            onClick={() => {
+              if (onRenderOffline) {
+                onRenderOffline({
+                  genre,
+                  bpm,
+                  duration,
+                });
+              }
+            }}
+            className="w-full py-2.5 rounded-md text-[11px] tracking-[0.12em] uppercase font-medium text-emerald-400 border border-emerald-500/30 hover:border-emerald-400/50 hover:bg-emerald-500/10 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            Render Offline ({sampleLibrary.available}/{sampleLibrary.total} samples)
+          </button>
+        )}
       </div>
     </form>
   );
