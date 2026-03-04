@@ -1,4 +1,6 @@
 <p align="center">
+  <img src="https://github.com/lukebancroft4-max/crescent-studio/actions/workflows/frontend-ci.yml/badge.svg" alt="Frontend CI" />
+  <img src="https://github.com/lukebancroft4-max/crescent-studio/actions/workflows/backend-ci.yml/badge.svg" alt="Backend CI" />
   <img src="https://img.shields.io/badge/Electron-40.x-47848F?style=flat-square&logo=electron&logoColor=white" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" />
   <img src="https://img.shields.io/badge/Tone.js-15-EF4444?style=flat-square" />
