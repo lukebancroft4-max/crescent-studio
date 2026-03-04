@@ -16,7 +16,7 @@ let _rafId = null;
 let _durationRef = 0;
 let _loopingRef = false;
 
-function startTimeUpdate(set, get) {
+function startTimeUpdate(set, _get) {
   function update() {
     const transport = Tone.getTransport();
     const t = transport.seconds;

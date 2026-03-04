@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useArrangerStore } from "../stores/arrangerStore";
 import { useAudioStore } from "../stores/audioStore";
 import { fetchHistory, getAudioUrl, getStemUrl } from "../api/client";
@@ -91,7 +91,6 @@ export default function ArrangerPage() {
 function SourcePanel() {
   const [sources, setSources] = useState([]);
   const [loading, setLoading] = useState(true);
-  const currentBeat = useAudioStore((s) => s.currentBeat);
   const stemData = useAudioStore((s) => s.stemData);
 
   useEffect(() => {
@@ -119,8 +118,6 @@ function SourcePanel() {
         type: "stem",
       }))
     : [];
-
-  const allSources = [...stemSources, ...sources];
 
   function handleDragStart(e, source) {
     e.dataTransfer.setData("application/json", JSON.stringify(source));
@@ -176,7 +173,7 @@ function SourceItem({ source, onDragStart }) {
 }
 
 /* ─── Timeline ─── */
-function Timeline({ tracks, timelineDuration, pixelsPerSecond, playheadPosition, isPlaying, onAddRegion, onMoveRegion, onRemoveRegion }) {
+function Timeline({ tracks, timelineDuration, pixelsPerSecond, playheadPosition, isPlaying, onAddRegion, onRemoveRegion }) {
   const timelineRef = useRef(null);
   const totalWidth = timelineDuration * pixelsPerSecond;
 
